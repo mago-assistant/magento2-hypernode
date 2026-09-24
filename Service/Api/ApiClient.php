@@ -1,0 +1,144 @@
+<?php
+/**
+ * Copyright © Mago Assistant
+ */
+declare(strict_types=1);
+
+namespace MagoAssistant\Hypernode\Service\Api;
+
+use MagoAssistant\Hypernode\Service\Config;
+use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\HTTP\Client\CurlFactory;
+use Magento\Framework\Serialize\Serializer\Json;
+
+class ApiClient implements ApiClientInterface
+{
+    private const USER_AGENT = 'MagoAssistant-Mago';
+
+    public function __construct(
+        private readonly CurlFactory $curlFactory,
+        private readonly Json $json,
+        private readonly Config $config
+    ) {
+    }
+
+    public function getApp(): array
+    {
+        return $this->getJson('/v2/app/' . $this->appName() . '/');
+    }
+
+    public function getFpmStatus(): string
+    {
+        // A NATS command: the API only accepts POST here (GET answers 405), with an empty body.
+        $data = $this->request('POST', '/v2/nats/' . $this->appName() . '/hypernode.show-fpm-status');
+        if (isset($data['status']) && (int)$data['status'] !== 200) {
+            throw new ApiException('The node did not answer the FPM status request: ' . ($data['message'] ?? 'unknown'));
+        }
+
+        return (string)($data['data'] ?? '');
+    }
+
+    public function getFlows(): array
+    {
+        // Trailing slash matters: without it the API answers 301, which this client does not follow.
+        return $this->getJson('/logbook/v1/logbooks/' . $this->appName() . '/flows/');
+    }
+
+    public function listAnnotations(): array
+    {
+        return $this->getJson('/v2/insights-annotation/?app=' . $this->appName());
+    }
+
+    public function createAnnotation(string $name, \DateTimeInterface $at, array $metrics, array $metadata): array
+    {
+        $body = [
+            'name' => $name,
+            'x_axis' => $at->format(\DateTimeInterface::ATOM),
+            'app' => $this->appName(),
+            'metadata' => $metadata,
+        ];
+        if ($metrics !== []) {
+            $body['metrics'] = array_values($metrics);
+        }
+
+        return $this->request('POST', '/v2/insights-annotation/create/', $body);
+    }
+
+    private function appName(): string
+    {
+        $appName = $this->config->getAppName();
+        if ($appName === '' || !preg_match('/^[a-z0-9-]+$/i', $appName)) {
+            throw new ApiException($this->config->getNotConfiguredMessage());
+        }
+
+        return $appName;
+    }
+
+    private function getJson(string $path): array
+    {
+        return $this->request('GET', $path);
+    }
+
+    private function request(string $method, string $path, ?array $body = null): array
+    {
+        $token = $this->config->getApiToken();
+        if ($token === '') {
+            throw new ApiException($this->config->getNotConfiguredMessage());
+        }
+
+        $url = Config::API_URL . $path;
+        $curl = $this->newCurl($token);
+
+        try {
+            if ($method === 'POST' && $body !== null) {
+                $curl->addHeader('Content-Type', 'application/json');
+                $curl->post($url, (string)$this->json->serialize($body));
+            } elseif ($method === 'POST') {
+                $curl->post($url, '');
+            } else {
+                $curl->get($url);
+            }
+        } catch (\Throwable $e) {
+            throw new ApiException('Could not reach the Hypernode API: ' . $e->getMessage(), 0, $e);
+        }
+
+        $status = $curl->getStatus();
+        $responseBody = $curl->getBody();
+        if ($status === 401 || $status === 403) {
+            throw new ApiException('The Hypernode API rejected the token (HTTP ' . $status . ').');
+        }
+        if ($status === 404) {
+            throw new ApiException('The Hypernode API does not know app "' . $this->config->getAppName() . '".');
+        }
+        if ($status < 200 || $status >= 300) {
+            throw new ApiException('Hypernode API answered HTTP ' . $status . ' for ' . $path);
+        }
+
+        if (trim($responseBody) === '') {
+            return [];
+        }
+
+        try {
+            $decoded = $this->json->unserialize($responseBody);
+        } catch (\Throwable $e) {
+            throw new ApiException('The Hypernode API returned invalid JSON for ' . $path, 0, $e);
+        }
+
+        return is_array($decoded) ? $decoded : ['value' => $decoded];
+    }
+
+    private function newCurl(string $token): Curl
+    {
+        $curl = $this->curlFactory->create();
+        $curl->setOptions([
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+        $curl->addHeader('Accept', 'application/json');
+        $curl->addHeader('Accept-Language', 'en-US');
+        $curl->addHeader('Authorization', 'Token ' . $token);
+        $curl->addHeader('User-Agent', self::USER_AGENT);
+
+        return $curl;
+    }
+}

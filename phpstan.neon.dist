@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    reportUnmatchedIgnoredErrors: false
+    treatPhpDocTypesAsCertain: false
+    paths:
+        - .
+    excludePaths:
+        - Test/*
+        - vendor/*
+    ignoreErrors:
+        - identifier: missingType.iterableValue

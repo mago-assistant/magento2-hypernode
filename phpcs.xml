@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHP_CodeSniffer" xsi:noNamespaceSchemaLocation="phpcs.xsd">
+    <description>Mago Hypernode configuration for CodeSniffer.</description>
+
+    <rule ref="Magento2">
+        <exclude name="Magento2.Annotation.MethodAnnotationStructure.NoCommentBlock"/>
+        <exclude name="Magento2.PHP.FinalImplementation.FoundFinal"/>
+    </rule>
+
+    <exclude-pattern>registration.php</exclude-pattern>
+    <exclude-pattern>vendor/*</exclude-pattern>
+
+    <rule ref="Generic.PHP.RequireStrictTypes">
+        <severity>9</severity>
+    </rule>
+</ruleset>
