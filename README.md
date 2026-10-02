@@ -1,6 +1,6 @@
 # Mago Hypernode
 
-Hypernode hosting skill for [Mago](https://github.com/mago-assistant/mago), the open source AI admin
+Hypernode hosting add-on for [Mago](https://github.com/mago-assistant/mago), the open source AI admin
 assistant for Magento 2 and Mage-OS. Ask "is the server slow?" in the Mago chat and get live answers
 from the Hypernode the store runs on.
 
