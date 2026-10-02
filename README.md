@@ -34,14 +34,19 @@ Server metrics are a snapshot of this moment; Insights remains the place for his
 
 ## Requirements
 
-- Mago >= 2.0 (`mago-assistant/mago`)
+- [Mago](https://github.com/mago-assistant/mago) >= 2.0 or its `main` branch (`mago-assistant/mago`)
 - Magento >= 2.4.9 or Mage-OS >= 3.0, PHP >= 8.2
 - A Hypernode with its API token
 
 ## Installation
 
+Install Mago first, following [its README](https://github.com/mago-assistant/mago#installation).
+Neither package has a tagged release yet, so both come from their `main` branch, and this add-on is
+installed straight from GitHub:
+
 ```bash
-composer require mago-assistant/magento2-hypernode
+composer config repositories.mago-hypernode vcs https://github.com/mago-assistant/magento2-hypernode
+composer require mago-assistant/mago:dev-main mago-assistant/magento2-hypernode:dev-main
 bin/magento module:enable MagoAssistant_Hypernode
 bin/magento setup:upgrade
 ```
