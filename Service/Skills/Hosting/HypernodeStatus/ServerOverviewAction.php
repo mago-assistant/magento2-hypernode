@@ -106,7 +106,7 @@ class ServerOverviewAction implements ActionInterface
         // Hypernode, so the live block is left out and Insights is the place for those numbers.
         $result = $this->config->isOnHypernode()
             ? ['server' => $this->systemMetrics->collect()]
-            : ['server' => null, 'server_note' => $this->config->getNotOnNodeMessage()];
+            : ['server_note' => $this->config->getNotOnNodeMessage()];
 
         try {
             $app = $this->apiClient->getApp();

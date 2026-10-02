@@ -71,7 +71,7 @@ class ServerOverviewActionTest extends TestCase
 
         $result = (new ServerOverviewAction($metrics, $client, $this->config(true, false)))->execute([], 1);
 
-        self::assertNull($result['server']);
+        self::assertArrayNotHasKey('server', $result);
         self::assertStringContainsString('Insights', $result['server_note']);
         self::assertSame('Falcon S', $result['hypernode']['plan']);
     }
