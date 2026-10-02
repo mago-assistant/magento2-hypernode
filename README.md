@@ -6,13 +6,14 @@ from the Hypernode the store runs on.
 
 ## What it adds
 
-One skill, `hypernode_status`, with six actions:
+One skill, `hypernode_status`, with seven actions:
 
 | Action | Data | Source | Access |
 |---|---|---|---|
 | `server_overview` | Plan, PHP and MySQL version, Redis size; on the node also CPU usage, load, memory, swap, uptime and disk | Hypernode API, `/proc` | Read |
 | `php_workers` | Busy and idle PHP-FPM workers, longest running requests | Hypernode API | Read |
 | `http_traffic` | Request rate, status codes, 5xx rate and paths, Varnish/PHP handlers, PHP response times, top paths, countries and user agents over the last N minutes | `/var/log/nginx/access.log` on the node | Read |
+| `node_settings` | Services and versions on the node: MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js, Xdebug and other profilers | Hypernode API | Read |
 | `recent_flows` | Recent node tasks (settings changes, backups, updates) and their state | Hypernode API | Read |
 | `list_annotations` | Custom [Hypernode Insights](https://insights.hypernode.com) annotations | Hypernode API | Read |
 | `create_annotation` | Mark the current moment in the Insights graphs | Hypernode API | Write, asks first |
@@ -26,6 +27,8 @@ Show the HTTP traffic of the last 30 minutes
 How many 5xx errors did we serve in the past hour, and on which pages?
 What is the Varnish hit rate at the moment?
 Which plan are we on and how full is the disk?
+Is MailHog enabled?
+Which OpenSearch version do we run?
 What changed on the node recently?
 Mark "Price import finished" in Insights
 ```
