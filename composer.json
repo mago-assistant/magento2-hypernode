@@ -8,8 +8,7 @@
         "php": ">=8.2",
         "mago-assistant/mago": ">=2.0 || dev-main",
         "magento/framework": "*",
-        "magento/module-backend": "*",
-        "magento/module-config": "*"
+        "magento/module-backend": "*"
     },
     "autoload": {
         "files": [
