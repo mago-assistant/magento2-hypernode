@@ -16,7 +16,7 @@ One skill, `hypernode_status`, with seven actions:
 | `node_settings` | Services and versions on the node: MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js, Xdebug and other profilers | Hypernode API | Read |
 | `recent_flows` | Recent node tasks (settings changes, backups, updates) and their state | Hypernode API | Read |
 | `list_annotations` | Custom [Hypernode Insights](https://insights.hypernode.com) annotations | Hypernode API | Read |
-| `create_annotation` | Mark the current moment in the Insights graphs | Hypernode API | Write, asks first |
+| `create_annotation` | Mark the current moment in the Insights graphs | Hypernode API | Write, cannot be undone, asks first |
 
 Example prompts:
 
@@ -61,7 +61,8 @@ None. The app name (from `hn_fqdn`) and API token (`hypernode_api_token`) are re
 local Docker) that file is missing, so the skill reports that it only works on the Hypernode itself.
 
 Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions;
-`create_annotation` goes through Mago's confirmation flow.
+`create_annotation` goes through Mago's "cannot be undone" confirmation, since the API has no delete
+for annotations.
 
 ## Privacy and security
 

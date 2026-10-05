@@ -8,6 +8,7 @@ namespace MagoAssistant\Hypernode\Test\Unit\Service\Skills\Hosting\HypernodeStat
 
 use MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\CreateAnnotationAction;
 use MagoAssistant\Hypernode\Test\Unit\Fakes\FakeApiClient;
+use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -48,6 +49,19 @@ class CreateAnnotationActionTest extends TestCase
         self::assertSame(
             'Hypernode API answered HTTP 500 for /v2/insights-annotation/create/',
             $action->execute(['name' => 'Deploy'], 1)['error']
+        );
+    }
+
+    #[Test]
+    public function itWarnsOnTheConfirmationCardThatTheAnnotationIsPermanent(): void
+    {
+        $action = new CreateAnnotationAction(new FakeApiClient());
+
+        self::assertInstanceOf(IrreversibleActionInterface::class, $action);
+        self::assertSame(
+            ['Adds the annotation "Deploy 1.2.3" to the Hypernode Insights graphs at the current time; '
+                . 'it cannot be removed afterwards.'],
+            $action->getImpacts(['name' => ' Deploy 1.2.3 '], 1)
         );
     }
 }

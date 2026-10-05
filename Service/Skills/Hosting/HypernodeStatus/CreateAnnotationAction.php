@@ -6,13 +6,14 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus;
 
+use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
 use MagoAssistant\Mago\Api\Skill\ValidatingActionInterface;
 use MagoAssistant\Hypernode\Service\Api\ApiClientInterface;
 use MagoAssistant\Hypernode\Service\Api\ApiException;
 use MagoAssistant\Hypernode\Service\Config;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
-class CreateAnnotationAction implements ValidatingActionInterface
+class CreateAnnotationAction implements ValidatingActionInterface, IrreversibleActionInterface
 {
     private const MAX_NAME_LENGTH = 120;
 
@@ -75,6 +76,17 @@ class CreateAnnotationAction implements ValidatingActionInterface
     {
         return 'Annotations cannot be removed through the API, so use them for real events only. The '
             . 'annotation is placed at the current time.';
+    }
+
+    /**
+     * The Hypernode API has no delete for annotations, so the confirmation card warns about that
+     */
+    public function getImpacts(array $params, int $adminUserId): array
+    {
+        return [
+            'Adds the annotation "' . trim((string)($params['name'] ?? '')) . '" to the Hypernode Insights '
+                . 'graphs at the current time; it cannot be removed afterwards.',
+        ];
     }
 
     public function findRefusal(array $params): ?array
