@@ -12,16 +12,22 @@ use MagoAssistant\Hypernode\Service\Api\ApiException;
 final class FakeApiClient implements ApiClientInterface
 {
     private array $app = [];
+    private array $settingDescriptions = [];
     private string $fpmStatus = '';
     private array $flows = [];
     private array $annotations = [];
     private ?string $failure = null;
-    /** @var array<int, array<string, mixed>> */
-    public array $createdAnnotations = [];
 
     public function withApp(array $app): self
     {
         $this->app = $app;
+
+        return $this;
+    }
+
+    public function withSettingDescriptions(array $descriptions): self
+    {
+        $this->settingDescriptions = $descriptions;
 
         return $this;
     }
@@ -61,6 +67,13 @@ final class FakeApiClient implements ApiClientInterface
         return $this->app;
     }
 
+    public function getSettingDescriptions(): array
+    {
+        $this->failIfAsked();
+
+        return $this->settingDescriptions;
+    }
+
     public function getFpmStatus(): string
     {
         $this->failIfAsked();
@@ -80,19 +93,6 @@ final class FakeApiClient implements ApiClientInterface
         $this->failIfAsked();
 
         return $this->annotations;
-    }
-
-    public function createAnnotation(string $name, \DateTimeInterface $at, array $metrics, array $metadata): array
-    {
-        $this->failIfAsked();
-        $this->createdAnnotations[] = [
-            'name' => $name,
-            'at' => $at->format(\DateTimeInterface::ATOM),
-            'metrics' => $metrics,
-            'metadata' => $metadata,
-        ];
-
-        return ['id' => count($this->createdAnnotations)];
     }
 
     private function failIfAsked(): void

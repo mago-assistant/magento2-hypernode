@@ -7,7 +7,7 @@ declare(strict_types=1);
 namespace MagoAssistant\Hypernode\Service\Api;
 
 /**
- * The Hypernode API calls the hosting skill needs; one method per endpoint, decoded JSON out.
+ * The read-only Hypernode API calls the hosting skill needs; one method per endpoint, decoded JSON out.
  */
 interface ApiClientInterface
 {
@@ -17,6 +17,13 @@ interface ApiClientInterface
      * @throws ApiException
      */
     public function getApp(): array;
+
+    /**
+     * GET /v2/app/eav_descriptions/ — every hypernode-systemctl setting with its allowed values
+     *
+     * @throws ApiException
+     */
+    public function getSettingDescriptions(): array;
 
     /**
      * POST /v2/nats/<app>/hypernode.show-fpm-status — one line per PHP-FPM worker, as text
@@ -39,11 +46,4 @@ interface ApiClientInterface
      */
     public function listAnnotations(): array;
 
-    /**
-     * POST /v2/insights-annotation/create/
-     *
-     * @param string[] $metrics Metric names the annotation applies to, [] for all
-     * @throws ApiException
-     */
-    public function createAnnotation(string $name, \DateTimeInterface $at, array $metrics, array $metadata): array;
 }

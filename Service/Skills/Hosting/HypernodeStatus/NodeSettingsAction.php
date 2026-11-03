@@ -11,41 +11,17 @@ use MagoAssistant\Hypernode\Service\Api\ApiClientInterface;
 use MagoAssistant\Hypernode\Service\Api\ApiException;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
+/**
+ * The node's hypernode-systemctl settings. Hypernode's own list of settings and allowed values decides
+ * what is shown, so the app's secrets, IPs and contact details never leave this class.
+ */
 class NodeSettingsAction implements ActionInterface
 {
-    // The app response also carries secrets, IPs, SSH keys and the owner's contact details, so only
-    // these named settings ever leave this class; a field Hypernode adds later stays out until listed.
-    private const SETTINGS = [
-        'mail' => ['mailhog_enabled'],
-        'cache' => [
-            'varnish_enabled',
-            'varnish_version',
-            'redis_version',
-            'redis_persistent_instance',
-            'valkey_enabled',
-        ],
-        'search' => ['opensearch_enabled', 'opensearch_version', 'elasticsearch_enabled', 'elasticsearch_version'],
-        'queue' => ['rabbitmq_enabled'],
-        'stack' => [
-            'php_version',
-            'alternative_php_versions',
-            'mysql_enabled',
-            'mysql_version',
-            'mariadb_enabled',
-            'mariadb_version',
-            'nodejs_version',
-            'composer_version',
-            'operating_system',
-        ],
-        'profiling' => ['php_xdebug_enabled', 'blackfire_enabled', 'tideways_enabled', 'new_relic_enabled'],
-        'other' => [
-            'in_production',
-            'phpmyadmin_enabled',
-            'auto_scaling_enabled',
-            'botstopper_enabled',
-            'monitoring_enabled',
-        ],
-    ];
+    public const DOCS_URL = 'https://docs.hypernode.com/hypernode-platform/tools/how-to-use-the-hypernode-systemctl-cli-tool.html';
+
+    // App fields that are not systemctl settings but give the settings their meaning.
+    private const CONTEXT = ['in_production'];
+    private const MAX_REQUESTED = 20;
 
     public function __construct(
         private readonly ApiClientInterface $apiClient
@@ -59,13 +35,21 @@ class NodeSettingsAction implements ActionInterface
 
     public function getDescription(): string
     {
-        return 'Services and settings on the node: MailHog, Varnish, Redis/Valkey, OpenSearch/Elasticsearch, '
-            . 'RabbitMQ, PHP/MySQL/Node.js versions and profilers such as Xdebug, Blackfire and Tideways';
+        return 'Current hypernode-systemctl settings of the node, such as MailHog, Varnish, Redis/Valkey, '
+            . 'OpenSearch, RabbitMQ, PHP/MySQL/Node.js versions and profilers; name settings to also get '
+            . 'the values they can be set to';
     }
 
     public function getParameterSchema(): array
     {
-        return [];
+        return [
+            'settings' => [
+                'type' => 'array',
+                'items' => ['type' => 'string'],
+                'description' => 'Setting names, e.g. ["php_version"], to also return their allowed values; '
+                    . 'omit for all current values',
+            ],
+        ];
     }
 
     public function getAclResource(): ?string
@@ -80,45 +64,94 @@ class NodeSettingsAction implements ActionInterface
 
     public function getFieldClassification(): array
     {
-        $rules = [];
-        foreach (self::SETTINGS as $fields) {
-            foreach ($fields as $field) {
-                $rules[$field] = [PiiClass::PUBLIC];
-            }
-        }
-
-        return $rules;
+        // Keys are Hypernode's setting names, and a value is only emitted when it is one of the choices
+        // Hypernode lists for that setting, a boolean or a number: no free text can pass.
+        return [PiiClass::ANY => [PiiClass::PUBLIC]];
     }
 
     public function getInstructions(): string
     {
-        return 'MailHog catches every outgoing email instead of delivering it: mailhog_enabled true on a node '
-            . 'with in_production true means customers receive no mail. varnish_enabled false means no full '
-            . 'page cache in front of PHP. Xdebug enabled slows every request down. Settings are changed in '
-            . 'the Hypernode Control Panel or with hypernode-systemctl on the node.';
+        return 'Setting names are those of hypernode-systemctl and describe themselves; ask for specific '
+            . '"settings" to see what they can be changed to, e.g. which PHP versions the node supports. '
+            . 'in_production tells whether this is the live shop: MailHog enabled there means customers get '
+            . 'no email. This skill cannot change settings: the admin does that in the Hypernode Control '
+            . 'Panel or with "hypernode-systemctl settings <name> <value>" on the node, see ' . self::DOCS_URL . '.';
     }
 
     public function execute(array $params, int $adminUserId): array
     {
         try {
+            $descriptions = $this->apiClient->getSettingDescriptions();
             $app = $this->apiClient->getApp();
         } catch (ApiException $e) {
             return ['error' => $e->getMessage()];
         }
 
-        $result = [];
-        foreach (self::SETTINGS as $group => $fields) {
-            foreach ($fields as $field) {
-                $value = $app[$field] ?? null;
-                if (is_array($value) && array_is_list($value)) {
-                    $value = implode(', ', array_filter($value, 'is_scalar'));
-                }
-                if (array_key_exists($field, $app) && ($value === null || is_scalar($value))) {
-                    $result[$group][$field] = $value;
-                }
+        $requested = array_slice(array_filter((array)($params['settings'] ?? []), 'is_string'), 0, self::MAX_REQUESTED);
+        if ($requested !== []) {
+            return $this->describe($requested, $descriptions, $app);
+        }
+
+        $settings = [];
+        foreach ($descriptions as $name => $options) {
+            if (is_string($name) && array_key_exists($name, $app) && $this->isSafe($app[$name], $options)) {
+                $settings[$name] = $app[$name];
             }
+        }
+        ksort($settings);
+
+        return ['context' => $this->context($app), 'settings' => $settings];
+    }
+
+    /**
+     * @param string[] $names
+     */
+    private function describe(array $names, array $descriptions, array $app): array
+    {
+        $settings = [];
+        $unknown = [];
+        foreach ($names as $name) {
+            if (!array_key_exists($name, $descriptions)) {
+                $unknown[] = $name;
+                continue;
+            }
+            $options = $descriptions[$name];
+            $value = $app[$name] ?? null;
+            $settings[$name] = [
+                'value' => $this->isSafe($value, $options) ? $value : null,
+                'options' => is_array($options) ? array_values(array_filter($options, 'is_scalar')) : [],
+            ];
+        }
+
+        $result = ['context' => $this->context($app), 'settings' => $settings];
+        if ($unknown !== []) {
+            $result['unknown_settings'] = $unknown;
         }
 
         return $result;
+    }
+
+    private function context(array $app): array
+    {
+        $context = [];
+        foreach (self::CONTEXT as $field) {
+            if (is_bool($app[$field] ?? null)) {
+                $context[$field] = $app[$field];
+            }
+        }
+
+        return $context;
+    }
+
+    private function isSafe(mixed $value, mixed $options): bool
+    {
+        if ($value === null || is_bool($value) || is_int($value) || is_float($value)) {
+            return true;
+        }
+        if (!is_string($value) || !is_array($options)) {
+            return false;
+        }
+
+        return in_array($value, array_map('strval', array_filter($options, 'is_scalar')), true);
     }
 }

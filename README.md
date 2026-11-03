@@ -6,17 +6,17 @@ from the Hypernode the store runs on.
 
 ## What it adds
 
-One skill, `hypernode_status`, with seven actions:
+One read-only skill, `hypernode_status`, with six actions. It never changes anything on the node
+or in the Hypernode account:
 
 | Action | Data | Source | Access |
 |---|---|---|---|
 | `server_overview` | Plan, PHP and MySQL version, Redis size; on the node also CPU usage, load, memory, swap, uptime and disk | Hypernode API, `/proc` | Read |
 | `php_workers` | Busy and idle PHP-FPM workers, longest running requests | Hypernode API | Read |
 | `http_traffic` | Request rate, status codes, 5xx rate and paths, Varnish/PHP handlers, PHP response times, top paths, countries and user agents over the last N minutes | `/var/log/nginx/access.log` on the node | Read |
-| `node_settings` | Services and versions on the node: MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js, Xdebug and other profilers | Hypernode API | Read |
+| `node_settings` | The node's `hypernode-systemctl` settings (MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js versions, profilers) and, for named settings, the values they can be set to | Hypernode API | Read |
 | `recent_flows` | Recent node tasks (settings changes, backups, updates) and their state | Hypernode API | Read |
 | `list_annotations` | Custom [Hypernode Insights](https://insights.hypernode.com) annotations | Hypernode API | Read |
-| `create_annotation` | Mark the current moment in the Insights graphs | Hypernode API | Write, cannot be undone, asks first |
 
 Example prompts:
 
@@ -28,9 +28,9 @@ How many 5xx errors did we serve in the past hour, and on which pages?
 What is the Varnish hit rate at the moment?
 Which plan are we on and how full is the disk?
 Is MailHog enabled?
+Which PHP versions can we switch to?
 Which OpenSearch version do we run?
 What changed on the node recently?
-Mark "Price import finished" in Insights
 ```
 
 Server metrics are a snapshot of this moment; Insights remains the place for history and graphs.
@@ -60,15 +60,19 @@ None. The app name (from `hn_fqdn`) and API token (`hypernode_api_token`) are re
 `/etc/hypernode/app.json`, which every Hypernode carries, Brancher nodes included. Off the node (staging,
 local Docker) that file is missing, so the skill reports that it only works on the Hypernode itself.
 
-Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions;
-`create_annotation` goes through Mago's "cannot be undone" confirmation, since the API has no delete
-for annotations.
+Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions.
 
 ## Privacy and security
 
 - The token is never stored in Magento and never appears in tool output or error messages. Requests go straight from your store to api.hypernode.com.
 - Client addresses, users and query strings never leave the server: `distinct_clients` is a count over
   hashed addresses, and admin `/key/<secret>/` segments and other long tokens in paths are masked.
+- Visitors control the request path and user agent, so a prompt injection could arrive through the
+  access log. User agents are reduced to fixed labels (`Googlebot`, `Chrome`, `curl`, `other bot`,
+  `other`), path segments with spaces, encoded or other unusual characters become `*`, long and deep
+  paths are cut, and 4xx paths are left out of `top_paths`. Raw log text never reaches the model.
+- `node_settings` follows Hypernode's own list of settings and allowed values: a value outside that list,
+  and every other field of the app (secrets, IPs, SSH keys, contact details), is never returned.
 - Every output field is classified for Mago's privacy filter.
 
 ## Development

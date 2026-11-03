@@ -27,6 +27,11 @@ class ApiClient implements ApiClientInterface
         return $this->getJson('/v2/app/' . $this->appName() . '/');
     }
 
+    public function getSettingDescriptions(): array
+    {
+        return $this->getJson('/v2/app/eav_descriptions/');
+    }
+
     public function getFpmStatus(): string
     {
         // A NATS command: the API only accepts POST here (GET answers 405), with an empty body.
@@ -49,21 +54,6 @@ class ApiClient implements ApiClientInterface
         return $this->getJson('/v2/insights-annotation/?app=' . $this->appName());
     }
 
-    public function createAnnotation(string $name, \DateTimeInterface $at, array $metrics, array $metadata): array
-    {
-        $body = [
-            'name' => $name,
-            'x_axis' => $at->format(\DateTimeInterface::ATOM),
-            'app' => $this->appName(),
-            'metadata' => $metadata,
-        ];
-        if ($metrics !== []) {
-            $body['metrics'] = array_values($metrics);
-        }
-
-        return $this->request('POST', '/v2/insights-annotation/create/', $body);
-    }
-
     private function appName(): string
     {
         $appName = $this->config->getAppName();
@@ -79,7 +69,7 @@ class ApiClient implements ApiClientInterface
         return $this->request('GET', $path);
     }
 
-    private function request(string $method, string $path, ?array $body = null): array
+    private function request(string $method, string $path): array
     {
         $token = $this->config->getApiToken();
         if ($token === '') {
@@ -90,10 +80,7 @@ class ApiClient implements ApiClientInterface
         $curl = $this->newCurl($token);
 
         try {
-            if ($method === 'POST' && $body !== null) {
-                $curl->addHeader('Content-Type', 'application/json');
-                $curl->post($url, (string)$this->json->serialize($body));
-            } elseif ($method === 'POST') {
+            if ($method === 'POST') {
                 $curl->post($url, '');
             } else {
                 $curl->get($url);

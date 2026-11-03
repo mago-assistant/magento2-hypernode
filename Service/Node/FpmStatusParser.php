@@ -13,13 +13,15 @@ namespace MagoAssistant\Hypernode\Service\Node;
 class FpmStatusParser
 {
     private readonly PathNormalizer $paths;
+    private readonly UserAgentClassifier $userAgents;
 
     private const MAX_ACTIVE_REQUESTS = 10;
     private const HTTP_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'PURGE', 'BAN'];
 
-    public function __construct(?PathNormalizer $paths = null)
+    public function __construct(?PathNormalizer $paths = null, ?UserAgentClassifier $userAgents = null)
     {
         $this->paths = $paths ?? new PathNormalizer();
+        $this->userAgents = $userAgents ?? new UserAgentClassifier();
     }
 
     /**
@@ -80,7 +82,7 @@ class FpmStatusParser
 
         $userAgent = '';
         if (preg_match('/\(([^()]*)\)\s*$/', $line, $matches)) {
-            $userAgent = mb_substr($matches[1], 0, 80);
+            $userAgent = $this->userAgents->classify($matches[1]);
         }
 
         return [
