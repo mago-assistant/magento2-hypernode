@@ -7,7 +7,7 @@ declare(strict_types=1);
 namespace MagoAssistant\Hypernode\Service\Api;
 
 /**
- * The Hypernode API calls the hosting skill needs; one method per endpoint, decoded JSON out.
+ * The read-only Hypernode API calls the hosting skill needs; one method per endpoint, decoded JSON out.
  */
 interface ApiClientInterface
 {
@@ -39,11 +39,4 @@ interface ApiClientInterface
      */
     public function listAnnotations(): array;
 
-    /**
-     * POST /v2/insights-annotation/create/
-     *
-     * @param string[] $metrics Metric names the annotation applies to, [] for all
-     * @throws ApiException
-     */
-    public function createAnnotation(string $name, \DateTimeInterface $at, array $metrics, array $metadata): array;
 }

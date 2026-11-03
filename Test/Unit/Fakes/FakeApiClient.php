@@ -16,8 +16,6 @@ final class FakeApiClient implements ApiClientInterface
     private array $flows = [];
     private array $annotations = [];
     private ?string $failure = null;
-    /** @var array<int, array<string, mixed>> */
-    public array $createdAnnotations = [];
 
     public function withApp(array $app): self
     {
@@ -80,19 +78,6 @@ final class FakeApiClient implements ApiClientInterface
         $this->failIfAsked();
 
         return $this->annotations;
-    }
-
-    public function createAnnotation(string $name, \DateTimeInterface $at, array $metrics, array $metadata): array
-    {
-        $this->failIfAsked();
-        $this->createdAnnotations[] = [
-            'name' => $name,
-            'at' => $at->format(\DateTimeInterface::ATOM),
-            'metrics' => $metrics,
-            'metadata' => $metadata,
-        ];
-
-        return ['id' => count($this->createdAnnotations)];
     }
 
     private function failIfAsked(): void
