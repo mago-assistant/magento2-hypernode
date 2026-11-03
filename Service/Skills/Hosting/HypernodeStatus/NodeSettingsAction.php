@@ -22,7 +22,6 @@ class NodeSettingsAction implements ActionInterface
     // App fields that are not systemctl settings but give the settings their meaning.
     private const CONTEXT = ['in_production'];
     private const MAX_REQUESTED = 20;
-    private const MAX_MATCHES = 10;
 
     public function __construct(
         private readonly ApiClientInterface $apiClient
@@ -47,8 +46,8 @@ class NodeSettingsAction implements ActionInterface
             'settings' => [
                 'type' => 'array',
                 'items' => ['type' => 'string'],
-                'description' => 'Setting names or parts of them, e.g. ["php_version"] or ["mailhog"], to also '
-                    . 'return their allowed values; omit for all current values',
+                'description' => 'Exact setting names, e.g. ["php_version"], to also return their allowed values; '
+                    . 'omit for all current values and their names',
             ],
         ];
     }
@@ -112,12 +111,10 @@ class NodeSettingsAction implements ActionInterface
         $settings = [];
         $unknown = [];
         foreach ($names as $name) {
-            $matches = $this->match($name, $descriptions);
-            if ($matches === []) {
+            if (array_key_exists($name, $descriptions)) {
+                $settings[$name] = $this->entry($name, $descriptions[$name], $app);
+            } else {
                 $unknown[] = $name;
-            }
-            foreach ($matches as $match) {
-                $settings[$match] = $this->entry($match, $descriptions[$match], $app);
             }
         }
 
@@ -129,28 +126,6 @@ class NodeSettingsAction implements ActionInterface
         }
 
         return $result;
-    }
-
-    /**
-     * The exact setting, else every setting whose name contains the term ("mailhog" finds mailhog_enabled)
-     *
-     * @return string[]
-     */
-    private function match(string $name, array $descriptions): array
-    {
-        if (array_key_exists($name, $descriptions)) {
-            return [$name];
-        }
-        $term = strtolower(trim(str_replace([' ', '-'], '_', $name), '_'));
-        if ($term === '') {
-            return [];
-        }
-        $matches = array_filter(
-            array_keys($descriptions),
-            static fn ($key): bool => is_string($key) && str_contains(strtolower($key), $term)
-        );
-
-        return array_slice(array_values($matches), 0, self::MAX_MATCHES);
     }
 
     private function entry(string $name, mixed $options, array $app): array
