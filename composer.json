@@ -2,11 +2,15 @@
     "name": "mago-assistant/magento2-hypernode",
     "description": "Hypernode hosting add-on for Mago, the AI admin assistant for Magento 2: server load, PHP-FPM workers, HTTP traffic and Hypernode Insights annotations in the chat.",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "keywords": [
+        "magento2",
+        "mago",
+        "mago-addon"
+    ],
     "license": "MIT",
     "require": {
         "php": ">=8.2",
-        "mago-assistant/magento2-mago": "^1.1 || dev-main",
+        "mago-assistant/magento2-mago": "*",
         "magento/framework": "*",
         "magento/module-backend": "*"
     },
