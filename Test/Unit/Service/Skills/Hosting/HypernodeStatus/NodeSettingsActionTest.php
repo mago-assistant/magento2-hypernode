@@ -52,6 +52,18 @@ class NodeSettingsActionTest extends TestCase
 
         self::assertSame(['php_version' => ['value' => '8.3', 'options' => ['8.2', '8.3', '8.4']]], $result['settings']);
         self::assertSame(['no_such_setting'], $result['unknown_settings']);
+        self::assertContains('mailhog_enabled', $result['available_settings']);
+    }
+
+    #[Test]
+    public function itFindsASettingByPartOfItsName(): void
+    {
+        $client = $this->client(['mailhog_enabled' => true]);
+
+        $result = (new NodeSettingsAction($client))->execute(['settings' => ['MailHog']], 1);
+
+        self::assertSame(['mailhog_enabled' => ['value' => true, 'options' => [true, false]]], $result['settings']);
+        self::assertArrayNotHasKey('unknown_settings', $result);
     }
 
     #[Test]

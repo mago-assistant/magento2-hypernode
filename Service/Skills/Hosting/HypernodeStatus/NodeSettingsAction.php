@@ -22,6 +22,7 @@ class NodeSettingsAction implements ActionInterface
     // App fields that are not systemctl settings but give the settings their meaning.
     private const CONTEXT = ['in_production'];
     private const MAX_REQUESTED = 20;
+    private const MAX_MATCHES = 10;
 
     public function __construct(
         private readonly ApiClientInterface $apiClient
@@ -46,8 +47,8 @@ class NodeSettingsAction implements ActionInterface
             'settings' => [
                 'type' => 'array',
                 'items' => ['type' => 'string'],
-                'description' => 'Setting names, e.g. ["php_version"], to also return their allowed values; '
-                    . 'omit for all current values',
+                'description' => 'Setting names or parts of them, e.g. ["php_version"] or ["mailhog"], to also '
+                    . 'return their allowed values; omit for all current values',
             ],
         ];
     }
@@ -111,24 +112,55 @@ class NodeSettingsAction implements ActionInterface
         $settings = [];
         $unknown = [];
         foreach ($names as $name) {
-            if (!array_key_exists($name, $descriptions)) {
+            $matches = $this->match($name, $descriptions);
+            if ($matches === []) {
                 $unknown[] = $name;
-                continue;
             }
-            $options = $descriptions[$name];
-            $value = $app[$name] ?? null;
-            $settings[$name] = [
-                'value' => $this->isSafe($value, $options) ? $value : null,
-                'options' => is_array($options) ? array_values(array_filter($options, 'is_scalar')) : [],
-            ];
+            foreach ($matches as $match) {
+                $settings[$match] = $this->entry($match, $descriptions[$match], $app);
+            }
         }
 
         $result = ['context' => $this->context($app), 'settings' => $settings];
         if ($unknown !== []) {
+            // Give the model the real names, so it can retry instead of reporting the setting missing.
             $result['unknown_settings'] = $unknown;
+            $result['available_settings'] = array_values(array_filter(array_keys($descriptions), 'is_string'));
         }
 
         return $result;
+    }
+
+    /**
+     * The exact setting, else every setting whose name contains the term ("mailhog" finds mailhog_enabled)
+     *
+     * @return string[]
+     */
+    private function match(string $name, array $descriptions): array
+    {
+        if (array_key_exists($name, $descriptions)) {
+            return [$name];
+        }
+        $term = strtolower(trim(str_replace([' ', '-'], '_', $name), '_'));
+        if ($term === '') {
+            return [];
+        }
+        $matches = array_filter(
+            array_keys($descriptions),
+            static fn ($key): bool => is_string($key) && str_contains(strtolower($key), $term)
+        );
+
+        return array_slice(array_values($matches), 0, self::MAX_MATCHES);
+    }
+
+    private function entry(string $name, mixed $options, array $app): array
+    {
+        $value = $app[$name] ?? null;
+
+        return [
+            'value' => $this->isSafe($value, $options) ? $value : null,
+            'options' => is_array($options) ? array_values(array_filter($options, 'is_scalar')) : [],
+        ];
     }
 
     private function context(array $app): array
