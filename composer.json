@@ -6,7 +6,7 @@
     "license": "MIT",
     "require": {
         "php": ">=8.2",
-        "mago-assistant/mago": ">=2.0 || dev-main",
+        "mago-assistant/magento2-mago": "^1.1 || dev-main",
         "magento/framework": "*",
         "magento/module-backend": "*"
     },
