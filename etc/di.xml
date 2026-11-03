@@ -20,7 +20,6 @@
                 <item name="http_traffic" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\HttpTrafficAction</item>
                 <item name="recent_flows" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\RecentFlowsAction</item>
                 <item name="list_annotations" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\ListAnnotationsAction</item>
-                <item name="create_annotation" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\CreateAnnotationAction</item>
             </argument>
         </arguments>
     </type>
