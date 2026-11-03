@@ -7,18 +7,26 @@ declare(strict_types=1);
 namespace MagoAssistant\Hypernode\Service\Api;
 
 use MagoAssistant\Hypernode\Service\Config;
+use Magento\Framework\App\Cache\Type\Config as ConfigCache;
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
+use Magento\Framework\Module\PackageInfo;
 use Magento\Framework\Serialize\Serializer\Json;
 
 class ApiClient implements ApiClientInterface
 {
     private const USER_AGENT = 'MagoAssistant-Mago';
+    private const MODULE = 'MagoAssistant_Hypernode';
+    private const SETTINGS_CACHE_KEY = 'mago_hypernode_setting_descriptions';
+    private const SETTINGS_CACHE_LIFETIME = 86400;
 
     public function __construct(
         private readonly CurlFactory $curlFactory,
         private readonly Json $json,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly PackageInfo $packageInfo,
+        private readonly CacheInterface $cache
     ) {
     }
 
@@ -29,7 +37,26 @@ class ApiClient implements ApiClientInterface
 
     public function getSettingDescriptions(): array
     {
-        return $this->getJson('/v2/app/eav_descriptions/');
+        // The same for every app and rarely changed, so one call a day is enough.
+        $cached = $this->cache->load(self::SETTINGS_CACHE_KEY);
+        if (is_string($cached) && $cached !== '') {
+            $decoded = $this->json->unserialize($cached);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        $descriptions = $this->getJson('/v2/app/eav_descriptions/');
+        if ($descriptions !== []) {
+            $this->cache->save(
+                (string)$this->json->serialize($descriptions),
+                self::SETTINGS_CACHE_KEY,
+                [ConfigCache::CACHE_TAG],
+                self::SETTINGS_CACHE_LIFETIME
+            );
+        }
+
+        return $descriptions;
     }
 
     public function getFpmStatus(): string
@@ -124,7 +151,8 @@ class ApiClient implements ApiClientInterface
         $curl->addHeader('Accept', 'application/json');
         $curl->addHeader('Accept-Language', 'en-US');
         $curl->addHeader('Authorization', 'Token ' . $token);
-        $curl->addHeader('User-Agent', self::USER_AGENT);
+        $version = $this->packageInfo->getVersion(self::MODULE);
+        $curl->addHeader('User-Agent', self::USER_AGENT . ($version !== '' ? '/' . $version : ''));
 
         return $curl;
     }
