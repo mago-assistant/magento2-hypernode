@@ -14,7 +14,7 @@ or in the Hypernode account:
 | `server_overview` | Plan, PHP and MySQL version, Redis size; on the node also CPU usage, load, memory, swap, uptime and disk | Hypernode API, `/proc` | Read |
 | `php_workers` | Busy and idle PHP-FPM workers, longest running requests | Hypernode API | Read |
 | `http_traffic` | Request rate, status codes, 5xx rate and paths, Varnish/PHP handlers, PHP response times, top paths, countries and user agents over the last N minutes | `/var/log/nginx/access.log` on the node | Read |
-| `node_settings` | Services and versions on the node: MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js, Xdebug and other profilers | Hypernode API | Read |
+| `node_settings` | The node's `hypernode-systemctl` settings (MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js versions, profilers) and, for named settings, the values they can be set to | Hypernode API | Read |
 | `recent_flows` | Recent node tasks (settings changes, backups, updates) and their state | Hypernode API | Read |
 | `list_annotations` | Custom [Hypernode Insights](https://insights.hypernode.com) annotations | Hypernode API | Read |
 
@@ -28,6 +28,7 @@ How many 5xx errors did we serve in the past hour, and on which pages?
 What is the Varnish hit rate at the moment?
 Which plan are we on and how full is the disk?
 Is MailHog enabled?
+Which PHP versions can we switch to?
 Which OpenSearch version do we run?
 What changed on the node recently?
 ```
@@ -78,6 +79,8 @@ Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's 
   access log. User agents are reduced to fixed labels (`Googlebot`, `Chrome`, `curl`, `other bot`,
   `other`), path segments with spaces, encoded or other unusual characters become `*`, long and deep
   paths are cut, and 4xx paths are left out of `top_paths`. Raw log text never reaches the model.
+- `node_settings` follows Hypernode's own list of settings and allowed values: a value outside that list,
+  and every other field of the app (secrets, IPs, SSH keys, contact details), is never returned.
 - Every output field is classified for Mago's privacy filter.
 
 ## Development

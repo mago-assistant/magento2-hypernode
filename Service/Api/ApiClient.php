@@ -27,6 +27,11 @@ class ApiClient implements ApiClientInterface
         return $this->getJson('/v2/app/' . $this->appName() . '/');
     }
 
+    public function getSettingDescriptions(): array
+    {
+        return $this->getJson('/v2/app/eav_descriptions/');
+    }
+
     public function getFpmStatus(): string
     {
         // A NATS command: the API only accepts POST here (GET answers 405), with an empty body.
