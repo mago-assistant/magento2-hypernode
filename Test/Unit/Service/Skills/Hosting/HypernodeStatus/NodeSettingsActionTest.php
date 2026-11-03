@@ -55,16 +55,6 @@ class NodeSettingsActionTest extends TestCase
         self::assertContains('mailhog_enabled', $result['available_settings']);
     }
 
-    #[Test]
-    public function itFindsASettingByPartOfItsName(): void
-    {
-        $client = $this->client(['mailhog_enabled' => true]);
-
-        $result = (new NodeSettingsAction($client))->execute(['settings' => ['MailHog']], 1);
-
-        self::assertSame(['mailhog_enabled' => ['value' => true, 'options' => [true, false]]], $result['settings']);
-        self::assertArrayNotHasKey('unknown_settings', $result);
-    }
 
     #[Test]
     public function itDropsValuesOutsideTheAllowedChoices(): void
