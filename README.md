@@ -6,7 +6,8 @@ from the Hypernode the store runs on.
 
 ## What it adds
 
-One skill, `hypernode_status`, with six actions:
+One read-only skill, `hypernode_status`, with five actions. It never changes anything on the node
+or in the Hypernode account:
 
 | Action | Data | Source | Access |
 |---|---|---|---|
@@ -15,7 +16,6 @@ One skill, `hypernode_status`, with six actions:
 | `http_traffic` | Request rate, status codes, 5xx rate and paths, Varnish/PHP handlers, PHP response times, top paths, countries and user agents over the last N minutes | `/var/log/nginx/access.log` on the node | Read |
 | `recent_flows` | Recent node tasks (settings changes, backups, updates) and their state | Hypernode API | Read |
 | `list_annotations` | Custom [Hypernode Insights](https://insights.hypernode.com) annotations | Hypernode API | Read |
-| `create_annotation` | Mark the current moment in the Insights graphs | Hypernode API | Write, asks first |
 
 Example prompts:
 
@@ -27,7 +27,6 @@ How many 5xx errors did we serve in the past hour, and on which pages?
 What is the Varnish hit rate at the moment?
 Which plan are we on and how full is the disk?
 What changed on the node recently?
-Mark "Price import finished" in Insights
 ```
 
 Server metrics are a snapshot of this moment; Insights remains the place for history and graphs.
@@ -64,8 +63,7 @@ On a Hypernode nothing needs filling in. Off the node (staging, local Docker) fi
 actions then work, while `server_overview`'s live block and `http_traffic` report that they are only
 available on the node itself, because `/proc` and the access log would describe some other machine.
 
-Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions;
-`create_annotation` goes through Mago's confirmation flow.
+Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions.
 
 ## Privacy and security
 
@@ -73,6 +71,10 @@ Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's 
   tool output or error messages. Requests go straight from your store to api.hypernode.com.
 - Client addresses, users and query strings never leave the server: `distinct_clients` is a count over
   hashed addresses, and admin `/key/<secret>/` segments and other long tokens in paths are masked.
+- Visitors control the request path and user agent, so a prompt injection could arrive through the
+  access log. User agents are reduced to fixed labels (`Googlebot`, `Chrome`, `curl`, `other bot`,
+  `other`), path segments with spaces, encoded or other unusual characters become `*`, long and deep
+  paths are cut, and 4xx paths are left out of `top_paths`. Raw log text never reaches the model.
 - Every output field is classified for Mago's privacy filter.
 
 ## Development

@@ -13,6 +13,7 @@ class AccessLogStats
 {
     private const TOP = 10;
     private readonly PathNormalizer $normalizer;
+    private readonly UserAgentClassifier $userAgentClassifier;
     private const STATIC_EXTENSIONS = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'woff', 'woff2', 'ico'];
 
     private int $requests = 0;
@@ -38,9 +39,10 @@ class AccessLogStats
     private int $lastSeen = 0;
     private int $staticRequests = 0;
 
-    public function __construct(?PathNormalizer $paths = null)
+    public function __construct(?PathNormalizer $paths = null, ?UserAgentClassifier $userAgents = null)
     {
         $this->normalizer = $paths ?? new PathNormalizer();
+        $this->userAgentClassifier = $userAgents ?? new UserAgentClassifier();
     }
 
     public function add(array $entry, int $time): void
@@ -62,7 +64,8 @@ class AccessLogStats
         $path = $this->pathOf((string)($entry['request'] ?? ''));
         if ($this->isStatic($path)) {
             $this->staticRequests++;
-        } else {
+        } elseif ($status < 400 || $status >= 500) {
+            // Any visitor can request a made-up URL and get a 4xx, so those never reach top_paths.
             $this->paths[$path] = ($this->paths[$path] ?? 0) + 1;
             if ($status >= 500) {
                 $this->errorPaths[$path] = ($this->errorPaths[$path] ?? 0) + 1;
@@ -74,7 +77,7 @@ class AccessLogStats
             $this->countries[$country] = ($this->countries[$country] ?? 0) + 1;
         }
 
-        $userAgent = mb_substr((string)($entry['user_agent'] ?? ''), 0, 80);
+        $userAgent = $this->userAgentClassifier->classify((string)($entry['user_agent'] ?? ''));
         if ($userAgent !== '') {
             $this->userAgents[$userAgent] = ($this->userAgents[$userAgent] ?? 0) + 1;
         }

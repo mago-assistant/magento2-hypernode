@@ -38,7 +38,7 @@ TXT;
 
         self::assertSame('POST', $requests[0]['method']);
         self::assertSame('/rest/V1/products', $requests[0]['path']);
-        self::assertSame('GuzzleHttp/7', $requests[0]['user_agent']);
+        self::assertSame('GuzzleHttp', $requests[0]['user_agent']);
         self::assertSame('/checkout/cart/', $requests[1]['path']);
         self::assertSame(4.2, $requests[1]['seconds']);
         self::assertStringNotContainsString('5.6.7.8', json_encode($requests, JSON_THROW_ON_ERROR));
