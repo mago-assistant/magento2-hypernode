@@ -9,6 +9,7 @@
 
     <exclude-pattern>registration.php</exclude-pattern>
     <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>*.xml</exclude-pattern>
 
     <rule ref="Generic.PHP.RequireStrictTypes">
         <severity>9</severity>

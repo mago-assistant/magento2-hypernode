@@ -9,16 +9,19 @@ namespace MagoAssistant\Hypernode\Service\Api;
 use MagoAssistant\Hypernode\Service\Config;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
+use Magento\Framework\Module\PackageInfo;
 use Magento\Framework\Serialize\Serializer\Json;
 
 class ApiClient implements ApiClientInterface
 {
     private const USER_AGENT = 'MagoAssistant-Mago';
+    private const MODULE = 'MagoAssistant_Hypernode';
 
     public function __construct(
         private readonly CurlFactory $curlFactory,
         private readonly Json $json,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly PackageInfo $packageInfo
     ) {
     }
 
@@ -119,7 +122,8 @@ class ApiClient implements ApiClientInterface
         $curl->addHeader('Accept', 'application/json');
         $curl->addHeader('Accept-Language', 'en-US');
         $curl->addHeader('Authorization', 'Token ' . $token);
-        $curl->addHeader('User-Agent', self::USER_AGENT);
+        $version = $this->packageInfo->getVersion(self::MODULE);
+        $curl->addHeader('User-Agent', self::USER_AGENT . ($version !== '' ? '/' . $version : ''));
 
         return $curl;
     }
