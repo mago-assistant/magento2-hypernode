@@ -12,6 +12,7 @@ use MagoAssistant\Hypernode\Service\Api\ApiException;
 final class FakeApiClient implements ApiClientInterface
 {
     private array $app = [];
+    private array $settingDescriptions = [];
     private string $fpmStatus = '';
     private array $flows = [];
     private array $annotations = [];
@@ -20,6 +21,13 @@ final class FakeApiClient implements ApiClientInterface
     public function withApp(array $app): self
     {
         $this->app = $app;
+
+        return $this;
+    }
+
+    public function withSettingDescriptions(array $descriptions): self
+    {
+        $this->settingDescriptions = $descriptions;
 
         return $this;
     }
@@ -57,6 +65,13 @@ final class FakeApiClient implements ApiClientInterface
         $this->failIfAsked();
 
         return $this->app;
+    }
+
+    public function getSettingDescriptions(): array
+    {
+        $this->failIfAsked();
+
+        return $this->settingDescriptions;
     }
 
     public function getFpmStatus(): string
