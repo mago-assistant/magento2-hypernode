@@ -19,6 +19,13 @@ interface ApiClientInterface
     public function getApp(): array;
 
     /**
+     * GET /v2/app/eav_descriptions/ — every hypernode-systemctl setting with its allowed values
+     *
+     * @throws ApiException
+     */
+    public function getSettingDescriptions(): array;
+
+    /**
      * POST /v2/nats/<app>/hypernode.show-fpm-status — one line per PHP-FPM worker, as text
      *
      * @throws ApiException

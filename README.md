@@ -6,7 +6,7 @@ from the Hypernode the store runs on.
 
 ## What it adds
 
-One read-only skill, `hypernode_status`, with five actions. It never changes anything on the node
+One read-only skill, `hypernode_status`, with six actions. It never changes anything on the node
 or in the Hypernode account:
 
 | Action | Data | Source | Access |
@@ -14,6 +14,7 @@ or in the Hypernode account:
 | `server_overview` | Plan, PHP and MySQL version, Redis size; on the node also CPU usage, load, memory, swap, uptime and disk | Hypernode API, `/proc` | Read |
 | `php_workers` | Busy and idle PHP-FPM workers, longest running requests | Hypernode API | Read |
 | `http_traffic` | Request rate, status codes, 5xx rate and paths, Varnish/PHP handlers, PHP response times, top paths, countries and user agents over the last N minutes | `/var/log/nginx/access.log` on the node | Read |
+| `node_settings` | The node's `hypernode-systemctl` settings (MailHog, Varnish, Redis/Valkey, OpenSearch, RabbitMQ, PHP/MySQL/Node.js versions, profilers) and, for named settings, the values they can be set to | Hypernode API | Read |
 | `recent_flows` | Recent node tasks (settings changes, backups, updates) and their state | Hypernode API | Read |
 | `list_annotations` | Custom [Hypernode Insights](https://insights.hypernode.com) annotations | Hypernode API | Read |
 
@@ -26,6 +27,9 @@ Show the HTTP traffic of the last 30 minutes
 How many 5xx errors did we serve in the past hour, and on which pages?
 What is the Varnish hit rate at the moment?
 Which plan are we on and how full is the disk?
+Is MailHog enabled?
+Which PHP versions can we switch to?
+Which OpenSearch version do we run?
 What changed on the node recently?
 ```
 
@@ -35,7 +39,7 @@ Server metrics are a snapshot of this moment; Insights remains the place for his
 
 - [Mago](https://github.com/mago-assistant/mago) >= 1.1 (`mago-assistant/magento2-mago`)
 - Magento >= 2.4.9 or Mage-OS >= 3.0, PHP >= 8.2
-- A Hypernode with its API token
+- Magento running on a Hypernode
 
 ## Installation
 
@@ -52,29 +56,23 @@ bin/magento setup:upgrade
 
 ## Configuration
 
-`Stores > Configuration > Mago Assistant > Hypernode`
-
-| Field | Config path | Default | Purpose |
-|---|---|---|---|
-| App name | `mago/hypernode/app_name` | detected from the hostname | The Hypernode app, e.g. `yourshop` for yourshop.hypernode.io |
-| API token | `mago/hypernode/api_token` | read from `/etc/hypernode/hypernode_api_token` | Stored encrypted, marked sensitive |
-
-On a Hypernode nothing needs filling in. Off the node (staging, local Docker) fill in both: the API
-actions then work, while `server_overview`'s live block and `http_traffic` report that they are only
-available on the node itself, because `/proc` and the access log would describe some other machine.
+None. The app name (from `hn_fqdn`) and API token (`hypernode_api_token`) are read from
+`/etc/hypernode/app.json`, which every Hypernode carries, Brancher nodes included. Off the node (staging,
+local Docker) that file is missing, so the skill reports that it only works on the Hypernode itself.
 
 Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions.
 
 ## Privacy and security
 
-- The token is stored encrypted, hidden by `config:show` and `app:config:dump`, and never appears in
-  tool output or error messages. Requests go straight from your store to api.hypernode.com.
+- The token is never stored in Magento and never appears in tool output or error messages. Requests go straight from your store to api.hypernode.com.
 - Client addresses, users and query strings never leave the server: `distinct_clients` is a count over
   hashed addresses, and admin `/key/<secret>/` segments and other long tokens in paths are masked.
 - Visitors control the request path and user agent, so a prompt injection could arrive through the
   access log. User agents are reduced to fixed labels (`Googlebot`, `Chrome`, `curl`, `other bot`,
   `other`), path segments with spaces, encoded or other unusual characters become `*`, long and deep
   paths are cut, and 4xx paths are left out of `top_paths`. Raw log text never reaches the model.
+- `node_settings` follows Hypernode's own list of settings and allowed values: a value outside that list,
+  and every other field of the app (secrets, IPs, SSH keys, contact details), is never returned.
 - Every output field is classified for Mago's privacy filter.
 
 ## Development
