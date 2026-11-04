@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="mago">
+            <group id="hypernode" translate="label comment" sortOrder="45" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Hypernode</label>
+                <comment><![CDATA[Lets the assistant report server load, PHP-FPM workers, HTTP traffic and Hypernode Insights annotations through the <code>hypernode_status</code> skill. On a Hypernode the app name and token are detected automatically; fill them in only to override or when Magento runs elsewhere. Live server metrics and the access log are only reported on the node itself.]]></comment>
+                <field id="app_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>App name</label>
+                    <comment>The Hypernode app name, e.g. "yourshop" for yourshop.hypernode.io. Leave empty to detect it from the hostname.</comment>
+                </field>
+                <field id="api_token" translate="label comment" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment><![CDATA[Found in <code>/etc/hypernode/hypernode_api_token</code> on the node. Leave empty to read that file directly. The token is never sent to the AI provider.]]></comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="MagoAssistant\Hypernode\Service\Api\ApiClientInterface" type="MagoAssistant\Hypernode\Service\Api\ApiClient"/>
+
+    <!-- Register the skill with Mago -->
+    <type name="MagoAssistant\Mago\Service\Tool\ToolRegistry">
+        <arguments>
+            <argument name="tools" xsi:type="array">
+                <item name="hypernode_status" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: HypernodeStatus -->
+    <type name="MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="server_overview" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\ServerOverviewAction</item>
+                <item name="php_workers" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\PhpWorkersAction</item>
+                <item name="http_traffic" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\HttpTrafficAction</item>
+                <item name="recent_flows" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\RecentFlowsAction</item>
+                <item name="list_annotations" xsi:type="object">MagoAssistant\Hypernode\Service\Skills\Hosting\HypernodeStatus\ListAnnotationsAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- The token never shows in config:show or app:config:dump -->
+    <type name="Magento\Config\Model\Config\TypePool">
+        <arguments>
+            <argument name="sensitive" xsi:type="array">
+                <item name="mago/hypernode/api_token" xsi:type="string">1</item>
+            </argument>
+        </arguments>
+    </type>
+</config>
