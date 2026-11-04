@@ -12,8 +12,7 @@
         "php": ">=8.2",
         "mago-assistant/magento2-mago": "*",
         "magento/framework": "*",
-        "magento/module-backend": "*",
-        "magento/module-config": "*"
+        "magento/module-backend": "*"
     },
     "autoload": {
         "files": [

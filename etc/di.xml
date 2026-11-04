@@ -24,13 +24,4 @@
             </argument>
         </arguments>
     </type>
-
-    <!-- The token never shows in config:show or app:config:dump -->
-    <type name="Magento\Config\Model\Config\TypePool">
-        <arguments>
-            <argument name="sensitive" xsi:type="array">
-                <item name="mago/hypernode/api_token" xsi:type="string">1</item>
-            </argument>
-        </arguments>
-    </type>
 </config>
