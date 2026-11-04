@@ -39,7 +39,7 @@ Server metrics are a snapshot of this moment; Insights remains the place for his
 
 - [Mago](https://github.com/mago-assistant/mago) >= 1.1 (`mago-assistant/magento2-mago`)
 - Magento >= 2.4.9 or Mage-OS >= 3.0, PHP >= 8.2
-- A Hypernode with its API token
+- Magento running on a Hypernode
 
 ## Installation
 
@@ -56,23 +56,15 @@ bin/magento setup:upgrade
 
 ## Configuration
 
-`Stores > Configuration > Mago Assistant > Hypernode`
-
-| Field | Config path | Default | Purpose |
-|---|---|---|---|
-| App name | `mago/hypernode/app_name` | detected from the hostname | The Hypernode app, e.g. `yourshop` for yourshop.hypernode.io |
-| API token | `mago/hypernode/api_token` | read from `/etc/hypernode/hypernode_api_token` | Stored encrypted, marked sensitive |
-
-On a Hypernode nothing needs filling in. Off the node (staging, local Docker) fill in both: the API
-actions then work, while `server_overview`'s live block and `http_traffic` report that they are only
-available on the node itself, because `/proc` and the access log would describe some other machine.
+None. The app name (from `hn_fqdn`) and API token (`hypernode_api_token`) are read from
+`/etc/hypernode/app.json`, which every Hypernode carries, Brancher nodes included. Off the node (staging,
+local Docker) that file is missing, so the skill reports that it only works on the Hypernode itself.
 
 Using the skill requires the `Magento_Backend::system` ACL resource plus Mago's own skill permissions.
 
 ## Privacy and security
 
-- The token is stored encrypted, hidden by `config:show` and `app:config:dump`, and never appears in
-  tool output or error messages. Requests go straight from your store to api.hypernode.com.
+- The token is never stored in Magento and never appears in tool output or error messages. Requests go straight from your store to api.hypernode.com.
 - Client addresses, users and query strings never leave the server: `distinct_clients` is a count over
   hashed addresses, and admin `/key/<secret>/` segments and other long tokens in paths are masked.
 - Visitors control the request path and user agent, so a prompt injection could arrive through the
