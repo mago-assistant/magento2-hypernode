@@ -55,7 +55,6 @@ class NodeSettingsActionTest extends TestCase
         self::assertContains('mailhog_enabled', $result['available_settings']);
     }
 
-
     #[Test]
     public function itDropsValuesOutsideTheAllowedChoices(): void
     {
